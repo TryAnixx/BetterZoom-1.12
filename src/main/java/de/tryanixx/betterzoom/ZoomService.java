@@ -12,6 +12,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
 public class ZoomService extends LabyModAddon {
@@ -24,9 +25,18 @@ public class ZoomService extends LabyModAddon {
     private int hotbarslot;
     private boolean hotbarslotstate;
 
+    private Field fieldHand;
+
     @Override
     public void onEnable() {
         api.registerForgeListener(this);
+        try {
+            fieldHand = Minecraft.getMinecraft().entityRenderer.getClass().getDeclaredField("renderHand");
+            fieldHand.setAccessible(true);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
         System.out.println("BetterZoom started");
     }
 
@@ -60,15 +70,25 @@ public class ZoomService extends LabyModAddon {
             if (!this.lastKeyDown) {
                 this.lastKeyDown = true;
                 this.prevZoom = Minecraft.getMinecraft().gameSettings.getOptionFloatValue(GameSettings.Options.FOV);
+                try {
+                    fieldHand.set(Minecraft.getMinecraft().entityRenderer, false);
+                } catch (IllegalAccessException illegalAccessException) {
+                    illegalAccessException.printStackTrace();
+                }
             }
             (Minecraft.getMinecraft()).gameSettings.smoothCamera = true;
             Minecraft.getMinecraft().gameSettings.setOptionFloatValue(GameSettings.Options.FOV, 20F / zoomFactor);
-            
+
             if(!hotbarslotstate) {
                 hotbarslot = Minecraft.getMinecraft().player.inventory.currentItem;
                 hotbarslotstate = true;
             }
         } else if (this.lastKeyDown) {
+            try {
+                fieldHand.set(Minecraft.getMinecraft().entityRenderer, true);
+            } catch (IllegalAccessException illegalAccessException) {
+                illegalAccessException.printStackTrace();
+            }
             this.lastKeyDown = false;
             (Minecraft.getMinecraft()).gameSettings.smoothCamera = false;
             Minecraft.getMinecraft().gameSettings.setOptionFloatValue(GameSettings.Options.FOV, prevZoom);
